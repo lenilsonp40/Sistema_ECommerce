@@ -11,9 +11,9 @@ namespace API_ECommerce.Context.Mappings
 
             builder.ToTable("ECommerce_TB001_Clientes");
 
-            builder.HasKey(x => x.ID);
+            builder.HasKey(x => x.ClienteID);
 
-            builder.HasIndex(x => x.ID).IsUnique();
+            builder.HasIndex(x => x.ClienteID).IsUnique();
 
             builder.Property(x => x.Nome)
                     .IsRequired()

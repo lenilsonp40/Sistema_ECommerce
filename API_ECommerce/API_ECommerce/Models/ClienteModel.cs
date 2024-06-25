@@ -7,7 +7,7 @@ namespace API_ECommerce.Models
     public class ClienteModel
     {
         [Key]
-        public int ID { get; set; }
+        public int ClienteID { get; set; }
         public string Nome { get; set; }
         public string CPF { get; set; }
         public string Email { get; set; }
