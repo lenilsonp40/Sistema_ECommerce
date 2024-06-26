@@ -12,10 +12,14 @@ namespace API_ECommerce.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfiguration(new ClienteMap());
+            modelBuilder.ApplyConfiguration(new ProdutoMap());
+
         }
         public DbSet<ClienteModel> cliente { get; set; }
+        public DbSet<ProdutoModel> produto { get; set; }
+
 
     }
 
-   
+
 }
