@@ -1,4 +1,5 @@
 ﻿using API_ECommerce.Context;
+using API_ECommerce.DTOs;
 using API_ECommerce.Models;
 using API_ECommerce.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -17,62 +18,128 @@ namespace API_ECommerce.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<ClienteModel>> Get()
+        public ActionResult<IEnumerable<ClienteDTO>> Get()
         {
             var clientes = _clienteRepository.GetClientes();
+
+            if (clientes == null)
+                return NotFound("Não existem clientes...");
+
+            var clientesDTO = new List<ClienteDTO>();
+            foreach (var cliente in clientes)
+            {
+                var clienteDTO = new ClienteDTO
+                {
+                    ClienteID = cliente.ClienteID,
+                    Nome = cliente.Nome,
+                    CPF = cliente.CPF,
+                    Email = cliente.Email
+                };
+                clientesDTO.Add(clienteDTO);
+            }
             return Ok(clientes);
         }
 
         [HttpGet("{id:int}", Name = "ObterCategoria")]
-        public ActionResult<ClienteModel> Get(int id)
+        public ActionResult<ClienteDTO> Get(int id)
         {
             var cliente = _clienteRepository.GetClienteID(id);
             if (cliente == null) 
             {
                 return NotFound($"Cliente com id= {id} não encontrada!");
             }
-            return Ok(cliente);
+
+            var clienteDTO = new ClienteDTO()
+            {
+                ClienteID = cliente.ClienteID,
+                Nome = cliente.Nome,
+                CPF = cliente.CPF,
+                Email = cliente.Email
+            };
+            return Ok(clienteDTO);
         }
 
         [HttpPost]
-        public ActionResult Post(ClienteModel cliente)
+        public ActionResult<ClienteDTO> Post(ClienteDTO clienteDTO)
         {
-            if (cliente is null)
+            if (clienteDTO is null)
             {               
                 return BadRequest("Dados inválidos");
             }
 
+            var cliente = new ClienteModel()
+            {
+                ClienteID = clienteDTO.ClienteID,
+                Nome = clienteDTO.Nome,
+                CPF = clienteDTO.CPF,
+                Email = clienteDTO.Email
+            };
+
             var clienteCriado = _clienteRepository.CreateCliente(cliente);
 
-            return new CreatedAtRouteResult("ObterCategoria", new { id = clienteCriado.ClienteID }, clienteCriado);
+            var novoClienteDTO = new ClienteDTO()
+            {
+                ClienteID = clienteCriado.ClienteID,
+                Nome = clienteCriado.Nome,
+                CPF = clienteCriado.CPF,
+                Email = clienteCriado.Email
+            };
+
+            return new CreatedAtRouteResult("ObterCategoria", new { id = novoClienteDTO.ClienteID }, novoClienteDTO);
         }
 
         [HttpPut("{id:int}")]
-        public ActionResult Put(int id, ClienteModel cliente)
+        public ActionResult<ClienteDTO> Put(int id, ClienteDTO clienteDTO)
         {
-            if (id != cliente.ClienteID)
+            if (id != clienteDTO.ClienteID)
             {
                 
                 return BadRequest("Dados inválidos");
             }
 
-            _clienteRepository.UpdateCliente(cliente);
-            return Ok(cliente);
+            var cliente = new ClienteModel()
+            {
+                ClienteID = clienteDTO.ClienteID,
+                Nome = clienteDTO.Nome,
+                CPF = clienteDTO.CPF,
+                Email = clienteDTO.Email
+            };
+
+           var clienteUpdate = _clienteRepository.UpdateCliente(cliente);
+
+            var updateClienteDTO = new ClienteDTO()
+            {
+                ClienteID = clienteUpdate.ClienteID,
+                Nome = clienteUpdate.Nome,
+                CPF = clienteUpdate.CPF,
+                Email = clienteUpdate.Email
+            };
+
+            return Ok(updateClienteDTO);
 
         }
 
         [HttpDelete("{id:int}")]
-        public ActionResult Delete(int id)
+        public ActionResult<ClienteDTO> Delete(int id)
         {
-            var categoria = _clienteRepository.DeleteCliente(id);
+            var cliente = _clienteRepository.GetClienteID(id);
 
-            if (categoria is null)
+            if (cliente is null)
             {                
                 return NotFound($"Categoria com id={id} não encontrada...");
             }
 
             var clienteExcluido = _clienteRepository.DeleteCliente(id);
-            return Ok(clienteExcluido);
+
+            var clienteExcluidoDTO = new ClienteDTO()
+            {
+                ClienteID = clienteExcluido.ClienteID,
+                Nome = clienteExcluido.Nome,
+                CPF = clienteExcluido.CPF,
+                Email = clienteExcluido.Email
+
+            };
+            return Ok(clienteExcluidoDTO);
 
         }
     }
