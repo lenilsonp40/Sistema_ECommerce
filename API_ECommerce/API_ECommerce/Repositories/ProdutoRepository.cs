@@ -1,5 +1,6 @@
 ﻿using API_ECommerce.Context;
 using API_ECommerce.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace API_ECommerce.Repositories
 {
@@ -26,7 +27,7 @@ namespace API_ECommerce.Repositories
             return produto;
         }
 
-        public ProdutoModel Create(ProdutoModel produto)
+        public ProdutoModel CreateProduto(ProdutoModel produto)
         {
             if (produto is null)
                 throw new InvalidOperationException("Produto é null");
@@ -36,31 +37,28 @@ namespace API_ECommerce.Repositories
             return produto;
         }
 
-        public bool Update(ProdutoModel produto)
+        public ProdutoModel UpdateProduto(ProdutoModel produto)
         {
-            if (produto is null)
-                throw new InvalidOperationException("Produto é null");
+            if (produto == null)
+                throw new ArgumentNullException(nameof(produto));
+            _context.Entry(produto).State = EntityState.Modified;
+            _context.SaveChanges();
+            return produto;
 
-            if (_context.produto.Any(p => p.ProdutoId == produto.ProdutoId))
-            {
-                _context.produto.Update(produto);
-                _context.SaveChanges();
-                return true;
-            }
-            return false;
+
+            
         }
 
-        public bool Delete(int id)
+        public ProdutoModel DeleteProduto(int id)
         {
             var produto = _context.produto.Find(id);
+            if (produto == null)
+                throw new ArgumentNullException(nameof(produto));
 
-            if (produto is not null)
-            {
-                _context.produto.Remove(produto);
-                _context.SaveChanges();
-                return true;
-            }
-            return false;
+            _context.produto.Remove(produto);
+            _context.SaveChanges();
+            return produto;
+            
         }
     }
 }

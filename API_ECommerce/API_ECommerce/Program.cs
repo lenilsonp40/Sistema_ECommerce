@@ -4,10 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(options => {
-    // options.UseSqlServer("Server=localhost,1433;Database=CodigoDeAutorizacao;User Id=sa;Password=1q2w3e4r@#$;Trust Server Certificate=True;");
-    options.UseSqlServer("Data Source=LENILSONNOTE\\SQLEXPRESS;Initial Catalog=ECommerceDB;Integrated Security=True;Trust Server Certificate=True;");
-
+builder.Services.AddDbContext<AppDbContext>(options => {   
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
 // Add services to the container.
@@ -19,6 +17,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
 
 
 

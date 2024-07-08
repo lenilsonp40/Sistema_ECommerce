@@ -6,8 +6,8 @@ namespace API_ECommerce.Repositories
     {
         IQueryable<ProdutoModel> GetProdutos();
         ProdutoModel GetProduto(int id);
-        ProdutoModel Create(ProdutoModel produto);
-        bool Update(ProdutoModel produto);
-        bool Delete(int id);
+        ProdutoModel CreateProduto(ProdutoModel produto);
+        ProdutoModel UpdateProduto(ProdutoModel produto);
+        ProdutoModel DeleteProduto(int id);
     }
 }

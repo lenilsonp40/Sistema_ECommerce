@@ -1,4 +1,7 @@
-﻿using API_ECommerce.Models;
+﻿using API_ECommerce.DTOs;
+using API_ECommerce.DTOs.Mappings;
+using API_ECommerce.Migrations;
+using API_ECommerce.Models;
 using API_ECommerce.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,78 +11,89 @@ namespace API_ECommerce.Controllers
     [ApiController]
     public class ProdutosController : ControllerBase
     {
-        private readonly IProdutoRepository _produtoRepository;
-        public ProdutosController(IProdutoRepository produtoRepository)
+        private readonly IUnitOfWork _uof;
+        public ProdutosController(IUnitOfWork uof)
         {
-            _produtoRepository = produtoRepository;
+            _uof = uof;
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<ProdutoModel>> Get()
+        public ActionResult<IEnumerable<ProdutoDTO>> Get()
         {
-            var produtos = _produtoRepository.GetProdutos().ToList();
+            var produtos = _uof.ProdutoRepository.GetProdutos().ToList();
+
             if (produtos is null)
             {
                 return NotFound();
             }
-            return Ok(produtos);
+
+            var produtosDTO = produtos.ToProdutoDTOList();
+            return Ok(produtosDTO);
         }
 
         [HttpGet("{id}", Name = "ObterProduto")]
-        public ActionResult<ProdutoModel> Get(int id)
+        public ActionResult<ProdutoDTO> Get(int id)
         {
-            var produto = _produtoRepository.GetProduto(id);
+            var produto = _uof.ProdutoRepository.GetProduto(id);
             if (produto is null)
             {
                 return NotFound("Produto não encontrado...");
             }
-            return Ok(produto);
+
+            var produtoDTO = produto.ToProdutoDTO();
+
+            return Ok(produtoDTO);
         }
 
         [HttpPost]
-        public ActionResult Post(ProdutoModel produto)
+        public ActionResult<ProdutoDTO> Post(ProdutoDTO produtoDTO)
         {
-            if (produto is null)
+            if (produtoDTO is null)
                 return BadRequest();
 
-            var novoProduto = _produtoRepository.Create(produto);
+            var produto = produtoDTO.ToProduto();
+
+            var produtonovo = _uof.ProdutoRepository.CreateProduto(produto);
+
+            var novoProdutoDTO = produtonovo.ToProdutoDTO();
+
 
             return new CreatedAtRouteResult("ObterProduto",
-                new { id = novoProduto.ProdutoId }, novoProduto);
+                new { id = novoProdutoDTO.ProdutoId }, novoProdutoDTO);
         }
 
         [HttpPut("{id:int}")]
-        public ActionResult Put(int id, ProdutoModel produto)
+        public ActionResult<ProdutoDTO> Put(int id, ProdutoDTO produtoDTO)
         {
-            if (id != produto.ProdutoId)
+            if (id != produtoDTO.ProdutoId)
             {
                 return BadRequest();
             }
 
-            bool atualizado = _produtoRepository.Update(produto);
+            var produto = produtoDTO.ToProduto();
 
-            if (atualizado)
-            {
-                return Ok(produto);
-            }
-            else
-            {
-                return StatusCode(500, $"Falha ao atualizar o produto de id = {id}");
-            }
+            var produtoUpdate = _uof.ProdutoRepository.UpdateProduto(produto);
+
+            var updateProdutoDTO = produtoUpdate.ToProdutoDTO();
+
+            return Ok(updateProdutoDTO);
+            
         }
 
         [HttpDelete("{id:int}")]
         public ActionResult Delete(int id)
         {
-            bool deletado = _produtoRepository.Delete(id);
-            if (deletado)
+            var deletado = _uof.ProdutoRepository.GetProduto(id);
+
+            if (deletado is null)
             {
-                return Ok($"Produto de id={id} foi excluído");
+                return NotFound($"Produto de id={id} naõ foi encontrado");
             }
-            else
-            {
-                return StatusCode(500, $"Falha ao excluir o produto de id={id}");
-            }
+
+            var produtoExcluido = _uof.ProdutoRepository.DeleteProduto(id);
+
+            var produtoExcluidoDTO = produtoExcluido.ToProdutoDTO();
+            return Ok(produtoExcluidoDTO);
         }
     }
 }

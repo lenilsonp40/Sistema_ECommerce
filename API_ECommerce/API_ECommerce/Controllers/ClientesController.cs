@@ -1,5 +1,6 @@
 ﻿using API_ECommerce.Context;
 using API_ECommerce.DTOs;
+using API_ECommerce.DTOs.Mappings;
 using API_ECommerce.Models;
 using API_ECommerce.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -9,53 +10,43 @@ namespace API_ECommerce.Controllers
     [Route("[controller]")]
     [ApiController]
     public class ClientesController : ControllerBase
-    {     
-        private readonly IClienteRepository _clienteRepository;
+    {
+        private readonly IUnitOfWork _uof;
+       
 
-        public ClientesController(IClienteRepository clienteRepository)
+        public ClientesController(IUnitOfWork uof)
         {
-            _clienteRepository = clienteRepository;
-        }
+
+           _uof = uof;
+        }       
 
         [HttpGet]
         public ActionResult<IEnumerable<ClienteDTO>> Get()
         {
-            var clientes = _clienteRepository.GetClientes();
+            var clientes = _uof.ClienteRepository.GetClientes();
 
             if (clientes == null)
                 return NotFound("Não existem clientes...");
 
-            var clientesDTO = new List<ClienteDTO>();
-            foreach (var cliente in clientes)
-            {
-                var clienteDTO = new ClienteDTO
-                {
-                    ClienteID = cliente.ClienteID,
-                    Nome = cliente.Nome,
-                    CPF = cliente.CPF,
-                    Email = cliente.Email
-                };
-                clientesDTO.Add(clienteDTO);
-            }
-            return Ok(clientes);
+           
+
+            var clientesDTO = clientes.ToClienteDTOList();
+            return Ok(clientesDTO);
         }
 
         [HttpGet("{id:int}", Name = "ObterCategoria")]
         public ActionResult<ClienteDTO> Get(int id)
         {
-            var cliente = _clienteRepository.GetClienteID(id);
+
+            var cliente = _uof.ClienteRepository.GetClienteID(id);
             if (cliente == null) 
             {
                 return NotFound($"Cliente com id= {id} não encontrada!");
             }
 
-            var clienteDTO = new ClienteDTO()
-            {
-                ClienteID = cliente.ClienteID,
-                Nome = cliente.Nome,
-                CPF = cliente.CPF,
-                Email = cliente.Email
-            };
+           
+
+            var clienteDTO = cliente.ToClienteDTO();
             return Ok(clienteDTO);
         }
 
@@ -65,25 +56,15 @@ namespace API_ECommerce.Controllers
             if (clienteDTO is null)
             {               
                 return BadRequest("Dados inválidos");
-            }
+            }            
 
-            var cliente = new ClienteModel()
-            {
-                ClienteID = clienteDTO.ClienteID,
-                Nome = clienteDTO.Nome,
-                CPF = clienteDTO.CPF,
-                Email = clienteDTO.Email
-            };
+            var cliente = clienteDTO.ToCliente();
 
-            var clienteCriado = _clienteRepository.CreateCliente(cliente);
+            var clienteCriado = _uof.ClienteRepository.CreateCliente(cliente);
+            _uof.Commit();
+            
 
-            var novoClienteDTO = new ClienteDTO()
-            {
-                ClienteID = clienteCriado.ClienteID,
-                Nome = clienteCriado.Nome,
-                CPF = clienteCriado.CPF,
-                Email = clienteCriado.Email
-            };
+            var novoClienteDTO = clienteCriado.ToClienteDTO();
 
             return new CreatedAtRouteResult("ObterCategoria", new { id = novoClienteDTO.ClienteID }, novoClienteDTO);
         }
@@ -96,24 +77,15 @@ namespace API_ECommerce.Controllers
                 
                 return BadRequest("Dados inválidos");
             }
+            
 
-            var cliente = new ClienteModel()
-            {
-                ClienteID = clienteDTO.ClienteID,
-                Nome = clienteDTO.Nome,
-                CPF = clienteDTO.CPF,
-                Email = clienteDTO.Email
-            };
+            var cliente = clienteDTO.ToCliente();
 
-           var clienteUpdate = _clienteRepository.UpdateCliente(cliente);
+            var clienteUpdate = _uof.ClienteRepository.UpdateCliente(cliente);
+            _uof.Commit();
 
-            var updateClienteDTO = new ClienteDTO()
-            {
-                ClienteID = clienteUpdate.ClienteID,
-                Nome = clienteUpdate.Nome,
-                CPF = clienteUpdate.CPF,
-                Email = clienteUpdate.Email
-            };
+
+            var updateClienteDTO = clienteUpdate.ToClienteDTO();
 
             return Ok(updateClienteDTO);
 
@@ -122,23 +94,19 @@ namespace API_ECommerce.Controllers
         [HttpDelete("{id:int}")]
         public ActionResult<ClienteDTO> Delete(int id)
         {
-            var cliente = _clienteRepository.GetClienteID(id);
+            var cliente = _uof.ClienteRepository.GetClienteID(id);
+
 
             if (cliente is null)
             {                
                 return NotFound($"Categoria com id={id} não encontrada...");
             }
 
-            var clienteExcluido = _clienteRepository.DeleteCliente(id);
+            var clienteExcluido = _uof.ClienteRepository.DeleteCliente(id);
+            _uof.Commit();
 
-            var clienteExcluidoDTO = new ClienteDTO()
-            {
-                ClienteID = clienteExcluido.ClienteID,
-                Nome = clienteExcluido.Nome,
-                CPF = clienteExcluido.CPF,
-                Email = clienteExcluido.Email
 
-            };
+            var clienteExcluidoDTO = clienteExcluido.ToClienteDTO();
             return Ok(clienteExcluidoDTO);
 
         }
