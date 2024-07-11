@@ -2,8 +2,11 @@
 using API_ECommerce.DTOs.Mappings;
 using API_ECommerce.Migrations;
 using API_ECommerce.Models;
+using API_ECommerce.Pagination;
 using API_ECommerce.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using X.PagedList;
 
 namespace API_ECommerce.Controllers
 {
@@ -18,9 +21,9 @@ namespace API_ECommerce.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<ProdutoDTO>> Get()
+        public async Task<ActionResult<IEnumerable<ProdutoDTO>>> Get()
         {
-            var produtos = _uof.ProdutoRepository.GetProdutos().ToList();
+            var produtos = await _uof.ProdutoRepository.GetProdutos();
 
             if (produtos is null)
             {
@@ -32,9 +35,9 @@ namespace API_ECommerce.Controllers
         }
 
         [HttpGet("{id}", Name = "ObterProduto")]
-        public ActionResult<ProdutoDTO> Get(int id)
+        public async Task<ActionResult<ProdutoDTO>> Get(int id)
         {
-            var produto = _uof.ProdutoRepository.GetProduto(id);
+            var produto = await _uof.ProdutoRepository.GetProduto(id);
             if (produto is null)
             {
                 return NotFound("Produto não encontrado...");
@@ -45,8 +48,56 @@ namespace API_ECommerce.Controllers
             return Ok(produtoDTO);
         }
 
+        //[HttpGet("pagination")]
+        //public ActionResult<IEnumerable<ProdutoDTO>> Get([FromQuery]
+        //                               ProdutosParameters produtosParameters)
+        //{
+        //    var produtos = _uof.ProdutoRepository.GetProdutosPagination(produtosParameters);
+
+
+        //    var produtosDTO = produtos.ToProdutoDTOList();
+
+        //    return Ok(produtosDTO);
+        //}
+
+        private ActionResult<IEnumerable<ProdutoDTO>> ObterPodutos(IPagedList<ProdutoModel> produtos)
+        {
+            var metadata = new
+            {
+                produtos.Count,
+                produtos.PageSize,
+                produtos.PageCount,
+                produtos.TotalItemCount,
+                produtos.HasNextPage,
+                produtos.HasPreviousPage
+            };
+
+            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+
+            var produtosDTO = produtos.ToProdutoDTOList();
+            return Ok(produtosDTO);
+        }
+
+        [HttpGet("pagination")]
+        public async Task<ActionResult<IEnumerable<ProdutoDTO>>> Get([FromQuery] ProdutosParameters produtosParameters)
+        {
+            var produtos = await _uof.ProdutoRepository.GetProdutosPagination(produtosParameters);
+            return ObterPodutos(produtos);
+        }
+
+       
+
+        [HttpGet("filter/preco/pagination")]
+        public async Task<ActionResult<IEnumerable<ProdutoDTO>>> GetProdutosFilterPreco([FromQuery] ProdutosFiltroPreco
+                                                                                    produtosFilterParameters)
+        {
+            var produtos = await _uof.ProdutoRepository.GetProdutosFiltroPreco(produtosFilterParameters);
+            return ObterPodutos(produtos);
+        }
+
+
         [HttpPost]
-        public ActionResult<ProdutoDTO> Post(ProdutoDTO produtoDTO)
+        public async Task<ActionResult<ProdutoDTO>> Post(ProdutoDTO produtoDTO)
         {
             if (produtoDTO is null)
                 return BadRequest();
@@ -54,6 +105,8 @@ namespace API_ECommerce.Controllers
             var produto = produtoDTO.ToProduto();
 
             var produtonovo = _uof.ProdutoRepository.CreateProduto(produto);
+            await _uof.Commit();
+
 
             var novoProdutoDTO = produtonovo.ToProdutoDTO();
 
@@ -63,7 +116,7 @@ namespace API_ECommerce.Controllers
         }
 
         [HttpPut("{id:int}")]
-        public ActionResult<ProdutoDTO> Put(int id, ProdutoDTO produtoDTO)
+        public async Task<ActionResult<ProdutoDTO>> Put(int id, ProdutoDTO produtoDTO)
         {
             if (id != produtoDTO.ProdutoId)
             {
@@ -73,6 +126,8 @@ namespace API_ECommerce.Controllers
             var produto = produtoDTO.ToProduto();
 
             var produtoUpdate = _uof.ProdutoRepository.UpdateProduto(produto);
+            await _uof.Commit();
+
 
             var updateProdutoDTO = produtoUpdate.ToProdutoDTO();
 
@@ -81,9 +136,9 @@ namespace API_ECommerce.Controllers
         }
 
         [HttpDelete("{id:int}")]
-        public ActionResult Delete(int id)
+        public async Task<ActionResult> Delete(int id)
         {
-            var deletado = _uof.ProdutoRepository.GetProduto(id);
+            var deletado = await _uof.ProdutoRepository.GetProduto(id);
 
             if (deletado is null)
             {
@@ -91,6 +146,7 @@ namespace API_ECommerce.Controllers
             }
 
             var produtoExcluido = _uof.ProdutoRepository.DeleteProduto(id);
+            await _uof.Commit();
 
             var produtoExcluidoDTO = produtoExcluido.ToProdutoDTO();
             return Ok(produtoExcluidoDTO);

@@ -32,9 +32,9 @@ namespace API_ECommerce.Repositories
                 return _clienteRepo = _clienteRepo ?? new ClienteRepository(_context);
             }
         }
-        public void Commit()
+        public async Task Commit()
         {
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public void Dispose() //Liberar memória

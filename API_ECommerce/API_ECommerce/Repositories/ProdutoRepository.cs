@@ -1,6 +1,9 @@
 ﻿using API_ECommerce.Context;
+using API_ECommerce.Migrations;
 using API_ECommerce.Models;
+using API_ECommerce.Pagination;
 using Microsoft.EntityFrameworkCore;
+using X.PagedList;
 
 namespace API_ECommerce.Repositories
 {
@@ -12,14 +15,15 @@ namespace API_ECommerce.Repositories
             _context = context;
         }      
 
-        public IQueryable<ProdutoModel> GetProdutos()
+        public async Task<IEnumerable<ProdutoModel>> GetProdutos()
         {
-            return _context.produto;
+            var produtos = await _context.produto.ToListAsync();
+            return produtos;
         }
 
-        public ProdutoModel GetProduto(int id)
+        public async Task<ProdutoModel> GetProduto(int id)
         {
-            var produto = _context.produto.FirstOrDefault(p => p.ProdutoId == id);
+            var produto = await _context.produto.FirstOrDefaultAsync(p => p.ProdutoId == id);
 
             if (produto is null)
                 throw new InvalidOperationException("Produto é null");
@@ -44,9 +48,7 @@ namespace API_ECommerce.Repositories
             _context.Entry(produto).State = EntityState.Modified;
             _context.SaveChanges();
             return produto;
-
-
-            
+                        
         }
 
         public ProdutoModel DeleteProduto(int id)
@@ -59,6 +61,52 @@ namespace API_ECommerce.Repositories
             _context.SaveChanges();
             return produto;
             
+        }
+
+        //public IEnumerable<ProdutoModel> GetProdutosPagination(ProdutosParameters produtosParams)
+        //{
+        //    return GetProdutos()
+        //      .OrderBy(p => p.Nome)
+        //      .Skip((produtosParams.PageNumber - 1) * produtosParams.PageSize)
+        //      .Take(produtosParams.PageSize).ToList();
+
+        //}
+
+        public async Task<IPagedList<ProdutoModel>> GetProdutosPagination(ProdutosParameters produtosParams)
+        {
+            //var produtos = GetProdutos().OrderBy(p => p.ProdutoId).AsQueryable();
+            var produtos = await GetProdutos();
+
+            var produtosOrdenados = produtos.OrderBy(p => p.ProdutoId).AsQueryable();
+
+
+            var resultados = await produtosOrdenados.ToPagedListAsync(produtosParams.PageNumber, produtosParams.PageSize);
+
+            return resultados;
+        }
+
+        public async Task<IPagedList<ProdutoModel>> GetProdutosFiltroPreco(ProdutosFiltroPreco produtosFiltroParams)
+        {
+            var produtos = await GetProdutos();
+
+            if (produtosFiltroParams.Preco.HasValue && !string.IsNullOrEmpty(produtosFiltroParams.PrecoCriterio))
+            {
+                if (produtosFiltroParams.PrecoCriterio.Equals("maior", StringComparison.OrdinalIgnoreCase))
+                {
+                    produtos = produtos.Where(p => p.Preco > produtosFiltroParams.Preco.Value).OrderBy(p => p.Preco);
+                }
+                else if (produtosFiltroParams.PrecoCriterio.Equals("menor", StringComparison.OrdinalIgnoreCase))
+                {
+                    produtos = produtos.Where(p => p.Preco < produtosFiltroParams.Preco.Value).OrderBy(p => p.Preco);
+                }
+                else if (produtosFiltroParams.PrecoCriterio.Equals("igual", StringComparison.OrdinalIgnoreCase))
+                {
+                    produtos = produtos.Where(p => p.Preco == produtosFiltroParams.Preco.Value).OrderBy(p => p.Preco);
+                }
+            }
+            var produtosFiltrados = await produtos.ToPagedListAsync(produtosFiltroParams.PageNumber, produtosFiltroParams.PageSize);
+
+            return produtosFiltrados;
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using API_ECommerce.Context;
 using API_ECommerce.Models;
+using API_ECommerce.Pagination;
 using Microsoft.EntityFrameworkCore;
+using X.PagedList;
 
 namespace API_ECommerce.Repositories
 {
@@ -13,14 +15,14 @@ namespace API_ECommerce.Repositories
             _context = context;
         }
 
-        public IEnumerable<ClienteModel> GetClientes()
+        public async Task<IEnumerable<ClienteModel>> GetClientesAsync()
         {
-            var clientes = _context.cliente.ToList();            
+            var clientes = await _context.cliente.ToListAsync();            
             return clientes;
         }
-        public ClienteModel GetClienteID(int id)
+        public async Task<ClienteModel> GetClienteID(int id)
         {
-            return _context.cliente.FirstOrDefault(c=> c.ClienteID == id);
+            return await _context.cliente.FirstOrDefaultAsync(c=> c.ClienteID == id);
              
         }
         public ClienteModel CreateCliente(ClienteModel cliente)
@@ -51,5 +53,38 @@ namespace API_ECommerce.Repositories
 
 
         }
+        public async Task<IPagedList<ClienteModel>> GetClientesPagination(ClientesParameters clientesParams)
+        {
+            
+            var clientes = await GetClientesAsync();
+
+            var clientesOrdenados = clientes.OrderBy(p => p.ClienteID).AsQueryable();
+
+            //var resultado = IPagedList<ClienteModel>.ToPagedList(clientesOrdenados,
+            //           clientesParams.PageNumber, clientesParams.PageSize);
+
+            var resultado = await clientesOrdenados.ToPagedListAsync(clientesParams.PageNumber, clientesParams.PageSize);
+
+            return resultado;
+        }
+
+        public async Task<IPagedList<ClienteModel>> GetClientesFiltroNome(ClientesFiltroNome clientesNomeParams)
+        {
+            var clientes = await GetClientesAsync();
+
+            if (!string.IsNullOrEmpty(clientesNomeParams.Nome))
+            {
+                var nomeFiltro = clientesNomeParams.Nome.ToLower();
+                clientes = clientes.Where(c => c.Nome.ToLower().Contains(nomeFiltro));
+            }
+
+            //var clientesFiltradas = PagedList<ClienteModel>.ToPagedList(clientes.AsQueryable(),
+            //                           clientesNomeParams.PageNumber, clientesNomeParams.PageSize);
+
+            var clientesFiltrados = await clientes.ToPagedListAsync(clientesNomeParams.PageNumber, clientesNomeParams.PageSize);
+
+            return clientesFiltrados;
+        }
+
     }
 }

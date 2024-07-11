@@ -2,8 +2,11 @@
 using API_ECommerce.DTOs;
 using API_ECommerce.DTOs.Mappings;
 using API_ECommerce.Models;
+using API_ECommerce.Pagination;
 using API_ECommerce.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using X.PagedList;
 
 namespace API_ECommerce.Controllers
 {
@@ -18,12 +21,30 @@ namespace API_ECommerce.Controllers
         {
 
            _uof = uof;
-        }       
+        }
+
+        private ActionResult<IEnumerable<ClienteDTO>> ObterClientes(IPagedList<ClienteModel> clientes)
+        {
+            var metadata = new
+            {
+                clientes.Count,
+                clientes.PageSize,
+                clientes.PageCount,
+                clientes.TotalItemCount,
+                clientes.HasNextPage,
+                clientes.HasPreviousPage
+            };
+
+            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+
+            var clientesDTO = clientes.ToClienteDTOList();
+            return Ok(clientesDTO);
+        }
 
         [HttpGet]
-        public ActionResult<IEnumerable<ClienteDTO>> Get()
+        public async Task<ActionResult<IEnumerable<ClienteDTO>>> Get()
         {
-            var clientes = _uof.ClienteRepository.GetClientes();
+            var clientes = await _uof.ClienteRepository.GetClientesAsync();
 
             if (clientes == null)
                 return NotFound("Não existem clientes...");
@@ -34,11 +55,29 @@ namespace API_ECommerce.Controllers
             return Ok(clientesDTO);
         }
 
+        [HttpGet("pagination")]
+        public async Task<ActionResult<IEnumerable<ClienteDTO>>> Get([FromQuery] ClientesParameters clientesParameters)
+        {
+            var clientes = await _uof.ClienteRepository.GetClientesPagination(clientesParameters);
+
+            return ObterClientes(clientes);
+
+        }
+
+        [HttpGet("filter/nome/pagination")]
+        public async Task<ActionResult<IEnumerable<ClienteDTO>>> GetNomesFiltrados([FromQuery] ClientesFiltroNome clientesFiltro)
+        {
+            var clientesFiltrados = await _uof.ClienteRepository.GetClientesFiltroNome(clientesFiltro);
+
+            return ObterClientes(clientesFiltrados);
+
+        }       
+
         [HttpGet("{id:int}", Name = "ObterCategoria")]
-        public ActionResult<ClienteDTO> Get(int id)
+        public async Task<ActionResult<ClienteDTO>> Get(int id)
         {
 
-            var cliente = _uof.ClienteRepository.GetClienteID(id);
+            var cliente = await _uof.ClienteRepository.GetClienteID(id);
             if (cliente == null) 
             {
                 return NotFound($"Cliente com id= {id} não encontrada!");
@@ -51,7 +90,7 @@ namespace API_ECommerce.Controllers
         }
 
         [HttpPost]
-        public ActionResult<ClienteDTO> Post(ClienteDTO clienteDTO)
+        public async Task<ActionResult<ClienteDTO>> Post(ClienteDTO clienteDTO)
         {
             if (clienteDTO is null)
             {               
@@ -61,7 +100,7 @@ namespace API_ECommerce.Controllers
             var cliente = clienteDTO.ToCliente();
 
             var clienteCriado = _uof.ClienteRepository.CreateCliente(cliente);
-            _uof.Commit();
+             await _uof.Commit();
             
 
             var novoClienteDTO = clienteCriado.ToClienteDTO();
@@ -70,7 +109,7 @@ namespace API_ECommerce.Controllers
         }
 
         [HttpPut("{id:int}")]
-        public ActionResult<ClienteDTO> Put(int id, ClienteDTO clienteDTO)
+        public async Task<ActionResult<ClienteDTO>> Put(int id, ClienteDTO clienteDTO)
         {
             if (id != clienteDTO.ClienteID)
             {
@@ -82,7 +121,7 @@ namespace API_ECommerce.Controllers
             var cliente = clienteDTO.ToCliente();
 
             var clienteUpdate = _uof.ClienteRepository.UpdateCliente(cliente);
-            _uof.Commit();
+            await _uof.Commit();
 
 
             var updateClienteDTO = clienteUpdate.ToClienteDTO();
@@ -92,9 +131,9 @@ namespace API_ECommerce.Controllers
         }
 
         [HttpDelete("{id:int}")]
-        public ActionResult<ClienteDTO> Delete(int id)
+        public async Task<ActionResult<ClienteDTO>> Delete(int id)
         {
-            var cliente = _uof.ClienteRepository.GetClienteID(id);
+            var cliente =  await _uof.ClienteRepository.GetClienteID(id);
 
 
             if (cliente is null)
@@ -103,7 +142,7 @@ namespace API_ECommerce.Controllers
             }
 
             var clienteExcluido = _uof.ClienteRepository.DeleteCliente(id);
-            _uof.Commit();
+            await _uof.Commit();
 
 
             var clienteExcluidoDTO = clienteExcluido.ToClienteDTO();
