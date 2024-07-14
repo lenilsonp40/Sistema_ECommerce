@@ -4,6 +4,7 @@ using API_ECommerce.Migrations;
 using API_ECommerce.Models;
 using API_ECommerce.Pagination;
 using API_ECommerce.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using X.PagedList;
@@ -21,6 +22,7 @@ namespace API_ECommerce.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<ProdutoDTO>>> Get()
         {
             var produtos = await _uof.ProdutoRepository.GetProdutos();
@@ -34,7 +36,8 @@ namespace API_ECommerce.Controllers
             return Ok(produtosDTO);
         }
 
-        [HttpGet("{id}", Name = "ObterProduto")]
+
+        [HttpGet("{id}", Name = "ObterProduto")]       
         public async Task<ActionResult<ProdutoDTO>> Get(int id)
         {
             var produto = await _uof.ProdutoRepository.GetProduto(id);

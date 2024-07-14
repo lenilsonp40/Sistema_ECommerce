@@ -30,11 +30,6 @@ namespace API_ECommerce.Context.Mappings
                     .HasColumnName("Email")
                     .HasColumnType("varchar(50)");
 
-
-
-
-
-
         }
     }
 }
