@@ -4,6 +4,7 @@ using API_ECommerce.DTOs.Mappings;
 using API_ECommerce.Models;
 using API_ECommerce.Pagination;
 using API_ECommerce.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using X.PagedList;
@@ -41,6 +42,7 @@ namespace API_ECommerce.Controllers
             return Ok(clientesDTO);
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ClienteDTO>>> Get()
         {
