@@ -11,8 +11,9 @@ using X.PagedList;
 
 namespace API_ECommerce.Controllers
 {
-    [Route("[controller]")]
     [ApiController]
+    [Route("[controller]")]
+    [Produces("application/json")] // defino que o tipo de retorno será um json
     public class ProdutosController : ControllerBase
     {
         private readonly IUnitOfWork _uof;
@@ -37,6 +38,11 @@ namespace API_ECommerce.Controllers
         }
 
 
+        /// <summary>
+        /// Obtem o produto pelo seu identificador id
+        /// </summary>
+        /// <param name="id">Código do produto</param>
+        /// <returns>Um objeto Produto</returns>
         [HttpGet("{id}", Name = "ObterProduto")]       
         public async Task<ActionResult<ProdutoDTO>> Get(int id)
         {
@@ -98,8 +104,25 @@ namespace API_ECommerce.Controllers
             return ObterPodutos(produtos);
         }
 
-
+        /// <summary>
+        /// Inclui uma nova categoria
+        /// </summary>
+        /// <remarks>
+        /// Exemplo de request:
+        ///
+        ///     POST api/categorias
+        ///     {
+        ///        "categoriaId": 1,
+        ///        "nome": "categoria1",
+        ///        "imagemUrl": "http://teste.net/1.jpg"
+        ///     }
+        /// </remarks>
+        /// <param name="categoriaDto">objeto Categoria</param>
+        /// <returns>O objeto Categoria incluida</returns>
+        /// <remarks>Retorna um objeto Categoria incluído</remarks>
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ProdutoDTO>> Post(ProdutoDTO produtoDTO)
         {
             if (produtoDTO is null)
@@ -119,11 +142,14 @@ namespace API_ECommerce.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesDefaultResponseType]
         public async Task<ActionResult<ProdutoDTO>> Put(int id, ProdutoDTO produtoDTO)
         {
             if (id != produtoDTO.ProdutoId)
             {
-                return BadRequest();
+                return BadRequest("Dados inválidos");
             }
 
             var produto = produtoDTO.ToProduto();

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,9 +52,42 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
+var OrigensComAcessoPermitido = "_origensComAcessoPermitido";
+
+builder.Services.AddCors(options =>
+   options.AddDefaultPolicy(
+   policy =>
+   {
+       policy.WithOrigins("http://www.apirequest.io")
+       .WithMethods("Get", "Post")
+       .AllowAnyHeader()
+       .AllowCredentials();
+   })
+);
+
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "apicatalogo", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "APIECommerce",
+        Description = "Sistema ECommerce",
+        TermsOfService = new Uri("https://github.com/lenilsonp40/Sistema_ECommerce"),
+        Contact = new OpenApiContact
+        {
+            Name = "Lenilson Soares",
+            Email = "lenilsonp40@gmail.com",
+            Url = new Uri("https://github.com/lenilsonp40/Sistema_ECommerce"),
+        },
+        License = new OpenApiLicense
+        {
+            Name = "Usar sobre LICX",
+            Url = new Uri("https://github.com/lenilsonp40/Sistema_ECommerce"),
+        }
+    });
+
+    var xmlFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFileName));
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
     {
@@ -94,10 +128,17 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    // app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json",
+            "API_ECommerce");
+    });
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(OrigensComAcessoPermitido);
 
 // app.UseAuthentication();  // Adicione esta linha para garantir que a autenticação seja usada
 app.UseAuthorization();

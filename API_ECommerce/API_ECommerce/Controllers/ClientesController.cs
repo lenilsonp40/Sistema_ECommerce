@@ -13,6 +13,8 @@ namespace API_ECommerce.Controllers
 {
     [Route("[controller]")]
     [ApiController]
+    [ApiConventionType(typeof(DefaultApiConventions))] // define a convenção dos métodos para todos os endpoints.
+
     public class ClientesController : ControllerBase
     {
         private readonly IUnitOfWork _uof;
